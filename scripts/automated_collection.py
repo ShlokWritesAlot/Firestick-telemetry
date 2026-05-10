@@ -70,10 +70,16 @@ def launch_youtube_action(controller):
     controller.label_logger.log_event("APP_READY", label="idle")
 
 def streaming_action(controller):
+    print("Launching YouTube and navigating to video...")
     controller.launch_app("com.amazon.firetv.youtube")
-    time.sleep(10)
-    controller.enter() # Play
-    time.sleep(5) # Buffer cooldown
+    time.sleep(12)
+    controller.down()   # Move to video grid
+    time.sleep(1)
+    controller.enter()  # Select video
+    time.sleep(2)
+    controller.enter()  # Confirm play
+    print("Streaming should be active. Waiting for buffer...")
+    time.sleep(8) # Allow buffer to stabilize
     controller.label_logger.log_event("STREAMING_START", label="streaming")
 
 def paused_action(controller):
@@ -85,20 +91,25 @@ def paused_action(controller):
     time.sleep(2)
     controller.label_logger.log_event("PAUSE_MARK", label="paused_stream")
 
+def switch_action(controller):
+    print("Simulating App Switching (Home <-> YouTube)...")
+    for _ in range(3):
+        controller.home()
+        time.sleep(3)
+        controller.launch_app("com.amazon.firetv.youtube")
+        time.sleep(5)
+    controller.label_logger.log_event("SWITCH_MARK", label="app_switch")
+
 if __name__ == "__main__":
     sessions = []
     
-    # 1. IDLE
-    sessions.append(run_automated_session("IDLE", 30))
-    
-    # 2. STREAMING 480p (Simulated by label)
-    sessions.append(run_automated_session("STREAMING_480p", 45, res="480p"))
-    
-    # 3. STREAMING 1080p (Simulated by label)
-    sessions.append(run_automated_session("STREAMING_1080p", 45, res="1080p"))
-    
-    # 4. PAUSED_STREAM
-    sessions.append(run_automated_session("PAUSED", 20, action_fn=paused_action))
+    # Run 2 sessions for each requested type
+    for i in range(2):
+        sessions.append(run_automated_session(f"IDLE_{i}", 45, action_fn=idle_action))
+        sessions.append(run_automated_session(f"STREAM_480p_{i}", 60, res="480p", action_fn=streaming_action))
+        sessions.append(run_automated_session(f"STREAM_1080p_{i}", 60, res="1080p", action_fn=streaming_action))
+        sessions.append(run_automated_session(f"PAUSED_{i}", 45, action_fn=paused_action))
+        sessions.append(run_automated_session(f"SWITCH_{i}", 60, action_fn=switch_action))
     
     print("\n" + "="*40)
     print(" GOLD STANDARD COLLECTION COMPLETE")

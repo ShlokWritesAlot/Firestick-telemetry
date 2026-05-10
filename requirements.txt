@@ -1,5 +1,9 @@
 # Core
 python-dotenv==1.0.1
+fastapi
+uvicorn
+websockets
+shap
 
 # Analysis (Pre-installed in most environments, but good to have)
 pandas
