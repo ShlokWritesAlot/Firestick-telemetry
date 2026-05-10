@@ -7,13 +7,16 @@ import sys
 # Add parent directory to path to allow absolute imports
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from scripts.config import TSHARK_PATH, NETWORK_INTERFACE, CAPTURE_DIR, FIRESTICK_IP, INCLUDE_ADB_TRAFFIC
+from scripts.config import (
+    TSHARK_PATH, CAPTURE_INTERFACE, CAPTURE_DIR, FIRESTICK_IP, FIRESTICK_MAC,
+    GATEWAY_MODE, EXCLUDE_ADB_TRAFFIC, INCLUDE_IPV6
+)
 from scripts.utils import setup_logging
 
 logger = setup_logging("CaptureManager")
 
 class CaptureManager:
-    def __init__(self, session_id: str, interface: str = NETWORK_INTERFACE):
+    def __init__(self, session_id: str, interface: str = CAPTURE_INTERFACE):
         self.session_id = session_id
         self.interface = interface
         self.process = None
@@ -26,28 +29,40 @@ class CaptureManager:
     def start_capture(self, target_ip: str = FIRESTICK_IP):
         """
         Starts a tshark capture in the background.
-        Filters for the target IP and optionally excludes ADB traffic.
+        Supports Gateway Mode, IPv6, and ADB filtering.
         """
         if self.process:
             logger.warning("Capture already running.")
             return False
 
-        # Build capture filter (BPF)
-        bpf_filter = f"host {target_ip}"
-        if not INCLUDE_ADB_TRAFFIC:
+        # Build BPF filter
+        # Hardware-level filtering is the most reliable
+        if FIRESTICK_MAC:
+            bpf_filter = f"ether host {FIRESTICK_MAC}"
+        else:
+            bpf_filter = f"host {target_ip}"
+            if not INCLUDE_IPV6:
+                bpf_filter = f"ip host {target_ip}"
+            
+        if EXCLUDE_ADB_TRAFFIC:
             bpf_filter += " and not tcp port 5555"
 
         # Build tshark command
         cmd = [
             TSHARK_PATH,
-            "-i", self.interface,
+            "-i", str(self.interface),
             "-f", bpf_filter,
             "-w", self.filepath
         ]
 
         try:
-            logger.info(f"Starting packet capture on interface {self.interface}...")
-            logger.info(f"Active Filter: {bpf_filter}")
+            print(f"\n[CAPTURE] Initializing Gateway Mode Capture...")
+            print(f"[CAPTURE] Interface: {self.interface}")
+            print(f"[CAPTURE] Filter:    {bpf_filter}")
+            print(f"[CAPTURE] Command:   {' '.join(cmd)}")
+            
+            logger.info(f"Starting Gateway Mode capture on interface {self.interface}...")
+            logger.info(f"Command: {' '.join(cmd)}")
             # We use a subprocess to keep it running in the background
             self.process = subprocess.Popen(
                 cmd,

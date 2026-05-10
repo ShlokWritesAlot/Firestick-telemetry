@@ -26,6 +26,28 @@ def run_tshark_count(pcap_path, display_filter):
     except Exception:
         return 0
 
+def run_tshark_top_ips(pcap_path, firestick_ip, limit=5):
+    """Returns top destination IPs from the capture."""
+    cmd = [
+        TSHARK_PATH,
+        "-r", pcap_path,
+        "-Y", f"ip.src == {firestick_ip}",
+        "-T", "fields",
+        "-e", "ip.dst"
+    ]
+    try:
+        result = subprocess.run(cmd, capture_output=True, text=True, timeout=30)
+        if result.returncode == 0:
+            ips = result.stdout.strip().split('\n')
+            counts = {}
+            for ip in ips:
+                if ip: counts[ip] = counts.get(ip, 0) + 1
+            sorted_ips = sorted(counts.items(), key=lambda x: x[1], reverse=True)
+            return sorted_ips[:limit]
+        return []
+    except Exception:
+        return []
+
 def validate_pcap(pcap_path, firestick_ip):
     if not os.path.exists(pcap_path):
         return {"error": f"File not found: {pcap_path}"}
@@ -49,6 +71,7 @@ def validate_pcap(pcap_path, firestick_ip):
         stats[name] = count
 
     stats["non_adb"] = stats["total"] - stats["adb"]
+    stats["top_ips"] = run_tshark_top_ips(pcap_path, firestick_ip)
     
     # Verdict logic
     # If non-ADB traffic is very low compared to total, or basically zero
@@ -87,10 +110,18 @@ def main():
         f"UDP Packets:    {results['udp']}",
         f"TCP Packets:    {results['tcp']}",
         f"QUIC Packets:   {results['quic']}",
+        "-"*40,
+        "TOP DESTINATION IPs (from FireStick):"
+    ]
+
+    for ip, count in results["top_ips"]:
+        report.append(f"  {ip:<15} : {count} pkts")
+
+    report.extend([
         "="*40,
         f"VERDICT: {results['verdict']}",
         "="*40
-    ]
+    ])
 
     if results["verdict"] != "VALID_WORKLOAD_CAPTURE":
         report.append("\nWARNING: Capture contains mostly ADB control traffic.")

@@ -10,7 +10,7 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from scripts.adb_controller import FireStickController
 from scripts.label_logger import LabelLogger
 from scripts.capture_manager import CaptureManager
-from scripts.config import PACKAGES, FIRESTICK_IP, NETWORK_INTERFACE
+from scripts.config import PACKAGES, FIRESTICK_IP, CAPTURE_INTERFACE
 
 def clear_screen():
     os.system('cls' if os.name == 'nt' else 'clear')
@@ -27,9 +27,9 @@ def print_header(session_id, ip):
 def print_menu():
     print("\n [ NAVIGATION ]          [ APPS ]             [ LABELS ]")
     print("  h: HOME                 y: YouTube           s: Mark STREAMING")
-    print("  b: BACK                 n: Netflix           f: Mark BUFFERING")
-    print("  e: ENTER                p: Prime Video       i: Mark IDLE")
-    print("  Arrows: u, d, l, r")
+    print("  b: BACK                 n: Netflix           z: Mark PAUSED_STREAM")
+    print("  e: ENTER                p: Prime Video       f: Mark TRUE_BUFFERING")
+    print("  Arrows: u, d, l, r      i: Mark IDLE         v: Mark PAUSE_RESUME")
     print("-" * 60)
     print("  stat: Check Foreground Activity")
     print("  q:    End Session & Save Metadata")
@@ -41,6 +41,8 @@ def main():
     # 1. Session Setup
     print("Starting new experiment session...")
     notes = input("Enter session notes/description: ")
+    res = input("Target Resolution (480p/720p/1080p/Auto): ") or "Auto"
+    wifi = input("WiFi Strength (Excellent/Good/Fair/Poor): ") or "Good"
     
     l_logger = LabelLogger()
     controller = FireStickController(label_logger=l_logger)
@@ -53,19 +55,21 @@ def main():
         return
 
     # 3. Packet Capture Setup
-    start_pcap = input(f"Start packet capture on interface '{NETWORK_INTERFACE}'? (y/n): ").lower() == 'y'
-    if start_pcap:
-        if not capture_mgr.start_capture():
-            print("[WARNING] Packet capture failed to start. Continuing with labels only.")
-            start_pcap = False
+    # In Gateway Mode, we start capture automatically as per requirements
+    start_pcap = True 
+    if not capture_mgr.start_capture():
+        print("[WARNING] Packet capture failed to start. Continuing with labels only.")
+        start_pcap = False
 
     # 4. Metadata Initialization
     metadata = {
         "target_ip": FIRESTICK_IP,
         "initial_notes": notes,
+        "target_resolution": res,
+        "wifi_strength": wifi,
         "start_time": datetime.now().isoformat(),
         "pcap_enabled": start_pcap,
-        "network_interface": NETWORK_INTERFACE if start_pcap else None
+        "network_interface": CAPTURE_INTERFACE if start_pcap else None
     }
 
     # 4. Interactive Loop
@@ -97,8 +101,12 @@ def main():
             # Manual Label Insertion
             elif cmd == 's':
                 l_logger.log_event("MANUAL_MARK", controller.current_app, "streaming", "User marked as streaming")
+            elif cmd == 'z':
+                l_logger.log_event("MANUAL_MARK", controller.current_app, "paused_stream", "User marked as paused_stream")
             elif cmd == 'f':
-                l_logger.log_event("MANUAL_MARK", controller.current_app, "buffering", "User marked as buffering")
+                l_logger.log_event("MANUAL_MARK", controller.current_app, "true_buffering", "User marked as true_buffering")
+            elif cmd == 'v':
+                l_logger.log_event("MANUAL_MARK", controller.current_app, "pause_resume", "User marked as pause_resume")
             elif cmd == 'i':
                 l_logger.log_event("MANUAL_MARK", controller.current_app, "idle", "User marked as idle")
             

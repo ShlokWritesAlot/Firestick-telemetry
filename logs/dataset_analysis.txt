@@ -1,0 +1,36 @@
+==================================================
+ BASELINE DATASET ANALYSIS
+==================================================
+
+[ 1. LABEL COUNTS ]
+label
+streaming     107
+idle           51
+app_launch     12
+unknown        10
+
+
+[ 2. STATISTICAL AVERAGES PER LABEL ]
+            bytes_per_sec  quic_count  tls_count  burst_density  pkt_count   size_mean
+label                                                                                 
+app_launch    4801.250000    0.000000   5.416667      12.916667  12.916667  307.808351
+idle          3569.372549    0.000000   3.549020      10.450980  10.450980  235.108151
+streaming    98828.850467   81.588785   6.981308      98.028037  98.028037  316.812320
+unknown      15426.500000    0.000000  16.500000      43.200000  43.200000  340.525281
+
+
+[ 3. PROTOCOL RATIOS ]
+
+
+[ 4. FEATURE VARIANCE ACROSS LABELS ]
+Top features distinguishing labels (by variance of means):
+iat_std          0.513709
+is_tcp           0.508557
+quic_count       0.500000
+tcp_udp_ratio    0.494608
+byte_count       0.480361
+bytes_per_sec    0.480361
+dns_count        0.473057
+pkt_count        0.465173
+burst_density    0.465173
+size_std         0.453240

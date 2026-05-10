@@ -6,18 +6,27 @@ load_dotenv()
 
 # ADB Configuration
 FIRESTICK_IP = os.getenv("FIRESTICK_IP", "192.168.1.100")
+FIRESTICK_MAC = os.getenv("FIRESTICK_MAC", "")
 ADB_PATH = os.getenv("ADB_PATH", "adb")  # Assumes adb is in PATH
 
 # TShark Configuration
 TSHARK_PATH = os.getenv("TSHARK_PATH", "tshark")
-NETWORK_INTERFACE = os.getenv("NETWORK_INTERFACE", "1")  # Default to first interface
-INCLUDE_ADB_TRAFFIC = os.getenv("INCLUDE_ADB_TRAFFIC", "false").lower() == "true"
+CAPTURE_INTERFACE = os.getenv("CAPTURE_INTERFACE", "5")  # Default to Hotspot interface
+GATEWAY_MODE = os.getenv("GATEWAY_MODE", "true").lower() == "true"
+EXCLUDE_ADB_TRAFFIC = os.getenv("EXCLUDE_ADB_TRAFFIC", "true").lower() == "true"
+INCLUDE_IPV6 = os.getenv("INCLUDE_IPV6", "false").lower() == "true"
 
 # Directory Paths
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 LOG_DIR = os.path.join(BASE_DIR, "logs")
 LABEL_DIR = os.path.join(BASE_DIR, "labels")
 CAPTURE_DIR = os.path.join(BASE_DIR, "captures")
+FEATURE_DIR = os.path.join(BASE_DIR, "data", "features")
+DATASET_DIR = os.path.join(BASE_DIR, "data", "master")
+MODELS_DIR = os.path.join(BASE_DIR, "models")
+PLOTS_DIR = os.path.join(BASE_DIR, "plots")
+DOC_DIR = os.path.join(BASE_DIR, "docs")
+MASTER_DATASET_PATH = os.path.join(DATASET_DIR, "master_dataset.csv")
 
 # Common Package Names
 PACKAGES = {
@@ -46,7 +55,9 @@ VALID_LABELS = [
     "idle",
     "app_launch",
     "streaming",
-    "buffering",
+    "paused_stream",
+    "true_buffering",
+    "pause_resume",
     "app_switch",
     "unknown"
 ]

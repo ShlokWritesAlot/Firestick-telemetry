@@ -1,0 +1,23 @@
+Validating capture: C:\Users\Shlok\Desktop\FireStick Analytics\captures\session_20260510_133032_capture.pcapng
+========================================
+ CAPTURE VALIDATION REPORT
+========================================
+File:           session_20260510_133032_capture.pcapng
+Total Packets:  0
+ADB Packets:    0
+Non-ADB:        0
+----------------------------------------
+DNS Packets:    0
+TLS Packets:    0
+UDP Packets:    0
+TCP Packets:    0
+QUIC Packets:   0
+----------------------------------------
+TOP DESTINATION IPs (from FireStick):
+========================================
+VERDICT: EMPTY_CAPTURE
+========================================
+
+WARNING: Capture contains mostly ADB control traffic.
+Your WiFi adapter may not be seeing Fire Stick internet traffic.
+Try Ethernet, router-side capture, or a different capture interface.

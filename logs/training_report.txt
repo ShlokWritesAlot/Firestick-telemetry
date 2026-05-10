@@ -1,0 +1,57 @@
+============================================================
+ SCIENTIFIC BASELINE TRAINING REPORT - 2026-05-10 13:53:57.005184
+============================================================
+Total Rows:     178
+Train Sessions: 2 (134 rows)
+Test Sessions:  1 (44 rows)
+------------------------------------------------------------
+Train IDs: ['20260510_134651', '20260510_134753']
+Test IDs:  ['20260510_133358']
+------------------------------------------------------------
+
+[ RANDOM FOREST - SESSION GENERALIZATION ]
+Accuracy: 0.3864
+
+Classification Report:
+              precision    recall  f1-score   support
+
+  app_launch       0.00      0.00      0.00         1
+        idle       0.00      0.00      0.00         0
+   streaming       0.94      0.40      0.56        43
+     unknown       0.00      0.00      0.00         0
+
+    accuracy                           0.39        44
+   macro avg       0.24      0.10      0.14        44
+weighted avg       0.92      0.39      0.54        44
+
+
+Feature Importance:
+bytes_per_sec    0.111975
+byte_count       0.107782
+size_std         0.104210
+tcp_udp_ratio    0.103037
+size_mean        0.101333
+pkt_count        0.096634
+burst_density    0.095289
+iat_mean         0.093221
+iat_std          0.087486
+tls_count        0.071778
+dns_count        0.027257
+quic_count       0.000000
+
+------------------------------------------------------------
+
+[ LOGISTIC REGRESSION - SESSION GENERALIZATION ]
+Accuracy: 0.2045
+
+Classification Report:
+              precision    recall  f1-score   support
+
+  app_launch       0.00      0.00      0.00         1
+        idle       0.00      0.00      0.00         0
+   streaming       0.90      0.21      0.34        43
+     unknown       0.00      0.00      0.00         0
+
+    accuracy                           0.20        44
+   macro avg       0.23      0.05      0.08        44
+weighted avg       0.88      0.20      0.33        44

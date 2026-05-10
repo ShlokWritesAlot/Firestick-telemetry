@@ -1,0 +1,24 @@
+Validating capture: C:\Users\Shlok\Desktop\FireStick Analytics\captures\session_20260510_133358_capture.pcapng
+========================================
+ CAPTURE VALIDATION REPORT
+========================================
+File:           session_20260510_133358_capture.pcapng
+Total Packets:  4914
+ADB Packets:    0
+Non-ADB:        4914
+----------------------------------------
+DNS Packets:    2
+TLS Packets:    286
+UDP Packets:    4368
+TCP Packets:    546
+QUIC Packets:   4366
+----------------------------------------
+TOP DESTINATION IPs (from FireStick):
+  116.119.218.208 : 825 pkts
+  142.250.207.238 : 227 pkts
+  142.250.193.130 : 12 pkts
+  3.254.238.163   : 11 pkts
+  18.164.202.78   : 3 pkts
+========================================
+VERDICT: VALID_WORKLOAD_CAPTURE
+========================================
