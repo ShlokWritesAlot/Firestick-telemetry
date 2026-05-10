@@ -35,3 +35,17 @@ KEY_CODES = {
     "PLAY_PAUSE": 85,
     "MENU": 82
 }
+
+# Label Configuration
+VALID_LABELS = [
+    "idle",
+    "app_launch",
+    "streaming",
+    "buffering",
+    "app_switch",
+    "unknown"
+]
+
+# Session Settings
+SESSION_PREFIX = "session"
+LABEL_FILENAME_FORMAT = "session_{session_id}_labels.csv"

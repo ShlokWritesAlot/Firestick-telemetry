@@ -8,14 +8,17 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from scripts.config import FIRESTICK_IP, ADB_PATH, KEY_CODES, PACKAGES
 from scripts.utils import setup_logging, get_timestamp
+from scripts.label_logger import LabelLogger
 
 logger = setup_logging("ADBController")
 
 class FireStickController:
-    def __init__(self, ip=FIRESTICK_IP):
+    def __init__(self, ip=FIRESTICK_IP, label_logger=None):
         self.ip = ip
         self.adb_cmd = ADB_PATH
         self.connected = False
+        self.label_logger = label_logger
+        self.current_app = "Unknown"
 
     def _run_command(self, cmd_args):
         """
@@ -71,6 +74,14 @@ class FireStickController:
         logger.info(f"[{get_timestamp()}] Sending KEY_{key_name} ({code})")
         
         result = self._run_command(["-s", self.ip, "shell", "input", "keyevent", str(code)])
+        
+        if self.label_logger:
+            self.label_logger.log_event(
+                event=f"KEY_{key_name}", 
+                app=self.current_app, 
+                label="idle" if key_name in ["HOME", "BACK"] else "unknown"
+            )
+            
         return result is not None and result.returncode == 0
 
     def launch_app(self, package_name):
@@ -78,6 +89,8 @@ class FireStickController:
         Launches an app using its package name.
         """
         logger.info(f"[{get_timestamp()}] Launching app: {package_name}")
+        self.current_app = package_name
+        
         # monkey -p <package> -c android.intent.category.LAUNCHER 1 is a reliable way to launch
         result = self._run_command([
             "-s", self.ip, 
@@ -86,6 +99,14 @@ class FireStickController:
             "-c", "android.intent.category.LAUNCHER", 
             "1"
         ])
+        
+        if self.label_logger:
+            self.label_logger.log_event(
+                event="APP_LAUNCH", 
+                app=package_name, 
+                label="app_launch"
+            )
+            
         return result is not None and result.returncode == 0
 
     def get_foreground_activity(self):
@@ -115,14 +136,18 @@ class FireStickController:
     def right(self): return self.send_key("RIGHT")
 
 if __name__ == "__main__":
-    # Simple test script
-    controller = FireStickController()
+    # Initialize labeling system
+    l_logger = LabelLogger()
+    
+    # Initialize controller with labeling support
+    controller = FireStickController(label_logger=l_logger)
+    
     if controller.connect():
-        print("\n--- EdgePulse FireStick Telemetry Node ---")
+        print("\n--- EdgePulse FireStick Telemetry Node (w/ Labeling) ---")
         print(f"Connected to: {controller.ip}")
-        print(f"Current Activity: {controller.get_foreground_activity()}")
-        print("Ready for commands.")
+        print(f"Session ID: {l_logger.session_id}")
         
         # Example: controller.home()
+        # This will automatically log the event to labels/session_<id>_labels.csv
     else:
         print("Could not connect. Please check IP and ensure ADB is enabled on FireStick.")
