@@ -2,6 +2,7 @@ import os
 import sys
 import time
 from datetime import datetime
+import subprocess
 
 # Add parent directory to path to allow absolute imports
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -118,6 +119,31 @@ def main():
     # 5. Session Wrap-up
     if start_pcap:
         capture_mgr.stop_capture()
+        
+        # Automatic Capture Validation
+        print("\n[INFO] Validating capture quality...")
+        report_path = os.path.join("logs", f"session_{l_logger.session_id}_capture_report.txt")
+        
+        cmd = [
+            sys.executable, 
+            "scripts/validate_capture.py", 
+            "--pcap", capture_mgr.filepath,
+            "--firestick-ip", FIRESTICK_IP
+        ]
+        
+        try:
+            val_result = subprocess.run(cmd, capture_output=True, text=True)
+            report_text = val_result.stdout
+            
+            with open(report_path, "w") as f:
+                f.write(report_text)
+            
+            print(report_text)
+            
+            if "ADB_ONLY_OR_INSUFFICIENT_CAPTURE" in report_text:
+                print("\n[!] CAUTION: This session may have missed streaming traffic.")
+        except Exception as e:
+            print(f"[ERROR] Validation failed: {str(e)}")
 
     metadata["end_time"] = datetime.now().isoformat()
     l_logger.save_metadata(metadata)

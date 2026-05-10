@@ -11,6 +11,7 @@ ADB_PATH = os.getenv("ADB_PATH", "adb")  # Assumes adb is in PATH
 # TShark Configuration
 TSHARK_PATH = os.getenv("TSHARK_PATH", "tshark")
 NETWORK_INTERFACE = os.getenv("NETWORK_INTERFACE", "1")  # Default to first interface
+INCLUDE_ADB_TRAFFIC = os.getenv("INCLUDE_ADB_TRAFFIC", "false").lower() == "true"
 
 # Directory Paths
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))

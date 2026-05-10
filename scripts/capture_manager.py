@@ -7,7 +7,7 @@ import sys
 # Add parent directory to path to allow absolute imports
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from scripts.config import TSHARK_PATH, NETWORK_INTERFACE, CAPTURE_DIR, FIRESTICK_IP
+from scripts.config import TSHARK_PATH, NETWORK_INTERFACE, CAPTURE_DIR, FIRESTICK_IP, INCLUDE_ADB_TRAFFIC
 from scripts.utils import setup_logging
 
 logger = setup_logging("CaptureManager")
@@ -26,25 +26,28 @@ class CaptureManager:
     def start_capture(self, target_ip: str = FIRESTICK_IP):
         """
         Starts a tshark capture in the background.
-        Filters for the target IP to keep files clean.
+        Filters for the target IP and optionally excludes ADB traffic.
         """
         if self.process:
             logger.warning("Capture already running.")
             return False
 
+        # Build capture filter (BPF)
+        bpf_filter = f"host {target_ip}"
+        if not INCLUDE_ADB_TRAFFIC:
+            bpf_filter += " and not tcp port 5555"
+
         # Build tshark command
-        # -i: interface
-        # -f: capture filter (BPF) - captures traffic to/from the target IP
-        # -w: output file
         cmd = [
             TSHARK_PATH,
             "-i", self.interface,
-            "-f", f"host {target_ip}",
+            "-f", bpf_filter,
             "-w", self.filepath
         ]
 
         try:
-            logger.info(f"Starting packet capture on interface {self.interface} for IP {target_ip}...")
+            logger.info(f"Starting packet capture on interface {self.interface}...")
+            logger.info(f"Active Filter: {bpf_filter}")
             # We use a subprocess to keep it running in the background
             self.process = subprocess.Popen(
                 cmd,
