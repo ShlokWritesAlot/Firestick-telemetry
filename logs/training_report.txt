@@ -1,57 +1,20 @@
-============================================================
- SCIENTIFIC BASELINE TRAINING REPORT - 2026-05-10 14:14:38.480875
-============================================================
-Total Rows:     445
-Train Sessions: 4 (351 rows)
-Test Sessions:  2 (94 rows)
-------------------------------------------------------------
-Train IDs: ['20260510_134753', '20260510_140217', '20260510_140303', '20260510_140430']
-Test IDs:  ['20260510_133358', '20260510_134651']
-------------------------------------------------------------
+ACCURACY: 0.3199
 
-[ RANDOM FOREST - SESSION GENERALIZATION ]
-Accuracy: 0.4043
+               precision    recall  f1-score   support
 
-Classification Report:
-              precision    recall  f1-score   support
+   app_launch       0.00      0.00      0.00        36
+         idle       0.15      0.23      0.18        70
+paused_stream       0.00      0.00      0.00         0
+    streaming       0.81      0.39      0.53       241
 
-  app_launch       0.00      0.00      0.00         1
-        idle       0.50      0.22      0.31        50
-   streaming       0.42      0.63      0.50        43
-     unknown       0.00      0.00      0.00         0
-
-    accuracy                           0.40        94
-   macro avg       0.23      0.21      0.20        94
-weighted avg       0.46      0.40      0.39        94
+     accuracy                           0.32       347
+    macro avg       0.24      0.16      0.18       347
+ weighted avg       0.59      0.32      0.41       347
 
 
-Feature Importance:
-bytes_per_sec    0.119157
-size_mean        0.113688
-byte_count       0.108763
-iat_mean         0.106169
-size_std         0.095061
-pkt_count        0.093786
-tcp_udp_ratio    0.092552
-burst_density    0.092225
-iat_std          0.084864
-tls_count        0.064576
-dns_count        0.029159
-quic_count       0.000000
-
-------------------------------------------------------------
-
-[ LOGISTIC REGRESSION - SESSION GENERALIZATION ]
-Accuracy: 0.3085
-
-Classification Report:
-              precision    recall  f1-score   support
-
-  app_launch       0.00      0.00      0.00         1
-        idle       0.00      0.00      0.00        50
-   streaming       0.38      0.67      0.48        43
-     unknown       0.00      0.00      0.00         0
-
-    accuracy                           0.31        94
-   macro avg       0.09      0.17      0.12        94
-weighted avg       0.17      0.31      0.22        94
+TOP FEATURES:
+rolling_bps_mean    0.144940
+rolling_bps_std     0.137853
+tcp_udp_ratio       0.079554
+iat_cv              0.071015
+byte_count          0.064629

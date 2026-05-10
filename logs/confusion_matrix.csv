@@ -1,5 +1,6 @@
-,app_launch,idle,streaming,unknown
-app_launch,0,0,1,0
-idle,1,11,36,2
-streaming,1,11,27,4
-unknown,0,0,0,0
+,app_launch,idle,paused_stream,streaming,unknown
+app_launch,0,21,0,3,0
+idle,1,8,13,11,22
+paused_stream,0,0,0,0,0
+streaming,56,48,2,58,58
+unknown,0,67,6,39,7

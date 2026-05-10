@@ -1,5 +1,7 @@
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
+from fastapi.responses import FileResponse
 import uvicorn
 import asyncio
 import json
@@ -20,6 +22,14 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# Serve Dashboard UI
+dashboard_path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "dashboard")
+app.mount("/static", StaticFiles(directory=dashboard_path), name="static")
+
+@app.get("/")
+async def serve_dashboard():
+    return FileResponse(os.path.join(dashboard_path, "index.html"))
 
 # Global Inference Engine
 engine = LiveInferenceEngine()

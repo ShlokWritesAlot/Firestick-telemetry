@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EdgePulse Live Telemetry</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Outfit', sans-serif; background-color: #0f172a; color: white; margin: 0; overflow-x: hidden; }
+        .glass { background: rgba(30, 41, 59, 0.7); backdrop-filter: blur(12px); border: 1px solid rgba(255,255,255,0.1); }
+        .glow-blue { box-shadow: 0 0 30px rgba(59, 130, 246, 0.15); }
+        .stat-card { transition: all 0.3s ease; }
+        .stat-card:hover { transform: translateY(-5px); border-color: rgba(59, 130, 246, 0.4); }
+        .prediction-text { text-shadow: 0 0 20px rgba(255,255,255,0.2); }
+    </style>
+</head>
+<body class="p-8">
+    <div class="max-w-7xl mx-auto">
+        <!-- Header -->
+        <div class="flex justify-between items-center mb-10">
+            <div>
+                <h1 class="text-4xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-blue-400 to-emerald-400">
+                    EdgePulse Telemetry
+                </h1>
+                <p class="text-slate-400 mt-1">Real-time Workload Classification & Explainability</p>
+            </div>
+            <div id="status-badge" class="px-4 py-2 rounded-full text-sm font-semibold glass text-red-400 border-red-400/30">
+                Disconnected
+            </div>
+        </div>
+
+        <div class="grid grid-cols-12 gap-6">
+            <!-- Left: Prediction & Explanations -->
+            <div class="col-span-12 lg:col-span-4 space-y-6">
+                <div class="glass p-8 rounded-[2rem] glow-blue flex flex-col items-center text-center">
+                    <h2 class="text-slate-500 uppercase text-xs tracking-[0.2em] mb-6 font-bold">Current Workload</h2>
+                    <div id="prediction-label" class="text-6xl font-black mb-2 prediction-text">IDLE</div>
+                    <div id="confidence-label" class="text-2xl font-bold text-slate-500">0.0% Confidence</div>
+                    
+                    <div class="mt-10 w-full text-left">
+                        <h3 class="text-slate-500 text-xs mb-4 uppercase tracking-widest font-bold">AI Explanation (SHAP)</h3>
+                        <div id="shap-container" class="space-y-3">
+                            <!-- SHAP bars will be injected here -->
+                        </div>
+                    </div>
+                </div>
+
+                <div class="glass p-6 rounded-3xl">
+                    <h3 class="text-slate-500 text-xs mb-4 uppercase font-bold tracking-widest text-center">Protocol Distribution</h3>
+                    <div class="flex justify-around items-end h-24 pt-4">
+                        <div class="flex flex-col items-center w-full">
+                            <div id="quic-bar" class="w-12 bg-emerald-500 rounded-t-lg transition-all duration-500" style="height: 10%"></div>
+                            <span class="text-[10px] mt-2 text-slate-400">QUIC</span>
+                        </div>
+                        <div class="flex flex-col items-center w-full">
+                            <div id="tls-bar" class="w-12 bg-blue-500 rounded-t-lg transition-all duration-500" style="height: 10%"></div>
+                            <span class="text-[10px] mt-2 text-slate-400">TLS</span>
+                        </div>
+                        <div class="flex flex-col items-center w-full">
+                            <div id="dns-bar" class="w-12 bg-purple-500 rounded-t-lg transition-all duration-500" style="height: 10%"></div>
+                            <span class="text-[10px] mt-2 text-slate-400">DNS</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Right: Real-time Charts -->
+            <div class="col-span-12 lg:col-span-8 space-y-6">
+                <div class="glass p-8 rounded-[2rem] h-[400px]">
+                    <div class="flex justify-between items-center mb-6">
+                        <h3 class="text-slate-500 text-xs uppercase font-bold tracking-widest">Live Throughput (KB/s)</h3>
+                        <div id="current-kbps" class="text-2xl font-mono text-blue-400">0.0 KB/s</div>
+                    </div>
+                    <div class="h-[300px]">
+                        <canvas id="throughputChart"></canvas>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-2 gap-6">
+                    <div class="glass p-6 rounded-3xl stat-card">
+                        <h3 class="text-slate-500 text-xs mb-2 uppercase font-bold tracking-widest">Packet Rate</h3>
+                        <div class="text-4xl font-bold flex items-baseline">
+                            <span id="pkt-rate">0</span>
+                            <span class="text-sm text-slate-500 ml-2 font-normal">pkts/sec</span>
+                        </div>
+                        <div class="mt-4 text-xs text-blue-400/80 font-semibold" id="burst-label">Burst Density: 0</div>
+                    </div>
+                    <div class="glass p-6 rounded-3xl stat-card">
+                        <h3 class="text-slate-500 text-xs mb-2 uppercase font-bold tracking-widest">Average Size</h3>
+                        <div class="text-4xl font-bold flex items-baseline">
+                            <span id="avg-size">0</span>
+                            <span class="text-sm text-slate-500 ml-2 font-normal">bytes</span>
+                        </div>
+                        <div class="mt-4 text-xs text-emerald-400/80 font-semibold" id="tcp-udp-ratio">TCP/UDP: 0.0</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const ctx = document.getElementById('throughputChart').getContext('2d');
+        const throughputChart = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: Array(30).fill(''),
+                datasets: [{
+                    label: 'Throughput',
+                    data: Array(30).fill(0),
+                    borderColor: '#3b82f6',
+                    borderWidth: 3,
+                    tension: 0.4,
+                    fill: true,
+                    backgroundColor: 'rgba(59, 130, 246, 0.1)',
+                    pointRadius: 0
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: { legend: { display: false } },
+                scales: {
+                    x: { display: false },
+                    y: { 
+                        grid: { color: 'rgba(255,255,255,0.05)' },
+                        ticks: { color: '#64748b' }
+                    }
+                }
+            }
+        });
+
+        function updateShap(explanations) {
+            const container = document.getElementById('shap-container');
+            container.innerHTML = '';
+            
+            const sorted = Object.entries(explanations)
+                .sort((a, b) => Math.abs(b[1]) - Math.abs(a[1]))
+                .slice(0, 5);
+
+            sorted.forEach(([name, val]) => {
+                const width = Math.min(100, Math.abs(val) * 100);
+                const color = val > 0 ? 'bg-emerald-500' : 'bg-red-500';
+                
+                const html = `
+                    <div class="space-y-1">
+                        <div class="flex justify-between text-[10px] text-slate-400">
+                            <span class="uppercase font-bold">${name.replace(/_/g, ' ')}</span>
+                            <span>${val > 0 ? '+' : ''}${val.toFixed(2)}</span>
+                        </div>
+                        <div class="w-full bg-slate-800/50 h-1.5 rounded-full overflow-hidden">
+                            <div class="${color} h-full transition-all duration-500" style="width: ${width}%"></div>
+                        </div>
+                    </div>
+                `;
+                container.insertAdjacentHTML('beforeend', html);
+            });
+        }
+
+        function connect() {
+            const statusBadge = document.getElementById('status-badge');
+            const ws = new WebSocket('ws://' + window.location.hostname + ':8000/ws/telemetry');
+
+            ws.onopen = () => {
+                statusBadge.textContent = 'Connected';
+                statusBadge.className = 'px-4 py-2 rounded-full text-sm font-semibold glass text-emerald-400 border-emerald-400/30';
+            };
+
+            ws.onclose = () => {
+                statusBadge.textContent = 'Disconnected';
+                statusBadge.className = 'px-4 py-2 rounded-full text-sm font-semibold glass text-red-400 border-red-400/30';
+                setTimeout(connect, 2000);
+            };
+
+            ws.onmessage = (event) => {
+                const msg = JSON.parse(event.data);
+                
+                // Update Prediction
+                document.getElementById('prediction-label').textContent = (msg.prediction?.label || 'IDLE').toUpperCase();
+                const conf = (msg.prediction?.confidence * 100) || 0;
+                document.getElementById('confidence-label').textContent = conf.toFixed(1) + '% Confidence';
+                
+                if (conf > 80) document.getElementById('confidence-label').className = 'text-2xl font-bold text-emerald-400';
+                else if (conf > 50) document.getElementById('confidence-label').className = 'text-2xl font-bold text-yellow-400';
+                else document.getElementById('confidence-label').className = 'text-2xl font-bold text-red-400';
+
+                // Update Stats
+                const kbps = (msg.metrics?.bytes_per_sec / 1024) || 0;
+                document.getElementById('current-kbps').textContent = kbps.toFixed(1) + ' KB/s';
+                document.getElementById('pkt-rate').textContent = msg.metrics?.pkt_count || 0;
+                document.getElementById('avg-size').textContent = Math.round(msg.metrics?.size_mean || 0);
+                document.getElementById('burst-label').textContent = 'Burst Density: ' + (msg.metrics?.burst_density || 0);
+                document.getElementById('tcp-udp-ratio').textContent = 'TCP/UDP: ' + (msg.metrics?.tcp_udp_ratio || 0).toFixed(2);
+
+                // Update Bars
+                document.getElementById('quic-bar').style.height = Math.min(100, (msg.metrics?.quic_count || 0) * 2) + '%';
+                document.getElementById('tls-bar').style.height = Math.min(100, (msg.metrics?.tls_count || 0) * 2) + '%';
+                document.getElementById('dns-bar').style.height = Math.min(100, (msg.metrics?.dns_count || 0) * 5) + '%';
+
+                // Update Chart
+                throughputChart.data.datasets[0].data.push(kbps);
+                throughputChart.data.datasets[0].data.shift();
+                throughputChart.update('none');
+
+                // Update SHAP
+                if (msg.prediction?.explanations) {
+                    updateShap(msg.prediction.explanations);
+                }
+            };
+        }
+
+        connect();
+    </script>
+</body>
+</html>

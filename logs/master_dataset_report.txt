@@ -1,19 +1,20 @@
 ==================================================
  MASTER DATASET QUALITY REPORT
 ==================================================
-Valid Sessions:    6
+Valid Sessions:    15
 Rejected (Quality): 5
 Rejected (Missing): 1
-Total Data Rows:   445
+Total Data Rows:   1333
 Duplicates Removed: 0
 --------------------------------------------------
 LABEL DISTRIBUTION:
-  streaming       : 271 (60.9%)
-  idle            : 109 (24.5%)
-  unknown         : 43 (9.7%)
-  app_launch      : 22 (4.9%)
+  streaming       : 495 (37.1%)
+  idle            : 340 (25.5%)
+  unknown         : 256 (19.2%)
+  app_launch      : 149 (11.2%)
+  paused_stream   : 93 (7.0%)
 --------------------------------------------------
 APP DISTRIBUTION:
-  Unknown         : 337
-  com.amazon.firetv.youtube : 108
+  Unknown         : 841
+  com.amazon.firetv.youtube : 492
 ==================================================

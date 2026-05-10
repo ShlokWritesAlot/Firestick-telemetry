@@ -84,6 +84,8 @@ class FeatureExtractor:
         features_list = []
         
         start_time = 0
+        window_history = []
+        
         while start_time + window_size <= max_time:
             end_time = start_time + window_size
             
@@ -94,10 +96,11 @@ class FeatureExtractor:
                 # Basic Stats
                 pkt_count = len(window_df)
                 byte_count = window_df['length'].sum()
+                bytes_per_sec = byte_count / window_size
                 
                 # Packet Size Stats
                 size_mean = window_df['length'].mean()
-                size_std = window_df['length'].std()
+                size_std = window_df['length'].fillna(0).std() if pkt_count > 1 else 0
                 
                 # Inter-Arrival Time (IAT) Stats
                 if pkt_count > 1:
@@ -121,22 +124,39 @@ class FeatureExtractor:
                 # Burst Density (simple heuristic: pkts / window_size)
                 burst_density = pkt_count / window_size
                 
-                features_list.append({
+                # NEW: Temporal Rolling Features (Memory of last 5s)
+                prev_bps = [w['bytes_per_sec'] for w in window_history[-5:]] if window_history else [bytes_per_sec]
+                rolling_bps_mean = np.mean(prev_bps)
+                rolling_bps_std = np.std(prev_bps) if len(prev_bps) > 1 else 0
+
+                # NEW: Jitter (IAT Coefficient of Variation)
+                iat_cv = iat_std / (iat_mean + 1e-6)
+
+                # NEW: Payload Density
+                payload_ratio = bytes_per_sec / (pkt_count + 1e-6)
+
+                features = {
                     'window_start': start_time,
                     'window_end': end_time,
                     'pkt_count': pkt_count,
                     'byte_count': byte_count,
-                    'bytes_per_sec': byte_count / window_size,
+                    'bytes_per_sec': bytes_per_sec,
+                    'rolling_bps_mean': rolling_bps_mean,
+                    'rolling_bps_std': rolling_bps_std,
                     'size_mean': size_mean,
-                    'size_std': size_std if not np.isnan(size_std) else 0,
+                    'size_std': size_std,
                     'iat_mean': iat_mean,
-                    'iat_std': iat_std if not np.isnan(iat_std) else 0,
+                    'iat_std': iat_std,
+                    'iat_cv': iat_cv,
+                    'payload_ratio': payload_ratio,
                     'burst_density': burst_density,
                     'dns_count': dns_count,
                     'tls_count': tls_count,
                     'quic_count': quic_count,
                     'tcp_udp_ratio': tcp_udp_ratio
-                })
+                }
+                features_list.append(features)
+                window_history.append(features)
             
             start_time += step_size
 

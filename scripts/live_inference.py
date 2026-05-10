@@ -29,6 +29,7 @@ class LiveInferenceEngine:
         
         # Buffers
         self.packet_buffer = []
+        self.feature_history = [] # Last 5 windows for rolling stats
         self.current_stats = {}
         self.is_running = False
         
@@ -125,42 +126,64 @@ class LiveInferenceEngine:
         # Basic Stats
         pkt_count = len(pkts)
         byte_count = sum(lens)
-        bytes_per_sec = byte_count # 1 second window
+        bytes_per_sec = float(byte_count) # 1 second window
         
-        size_mean = np.mean(lens) if pkts else 0
-        size_std = np.std(lens) if pkts else 0
+        size_mean = float(np.mean(lens)) if pkts else 0.0
+        size_std = float(np.std(lens)) if pkts else 0.0
         
         iats = np.diff(times) if len(times) > 1 else [0]
-        iat_mean = np.mean(iats)
-        iat_std = np.std(iats)
+        iat_mean = float(np.mean(iats))
+        iat_std = float(np.std(iats))
         
-        # Protocol detection (Simplified)
+        # NEW: Rolling Temporal Features
+        prev_bps = [f['bytes_per_sec'] for f in self.feature_history[-5:]] if self.feature_history else [bytes_per_sec]
+        rolling_bps_mean = float(np.mean(prev_bps))
+        rolling_bps_std = float(np.std(prev_bps)) if len(prev_bps) > 1 else 0.0
+        
+        # NEW: Jitter
+        iat_cv = float(iat_std / (iat_mean + 1e-6))
+        
+        # NEW: Payload Ratio
+        payload_ratio = float(bytes_per_sec / (pkt_count + 1e-6))
+        
+        # Protocol detection
         dns_count = sum(1 for p in pkts if '53' in (p['sport'], p['dport']))
         tls_count = sum(1 for p in pkts if p['tls'] != "")
-        quic_count = sum(1 for p in pkts if '443' in (p['sport'], p['dport']) and p['proto'] == '17') # UDP 17
+        quic_count = sum(1 for p in pkts if '443' in (p['sport'], p['dport']) and p['proto'] == '17')
         
-        # Burst density (Packets per 100ms max)
+        # Burst density
         bins = np.histogram(times, bins=10)[0]
-        burst_density = np.max(bins) if len(bins) > 0 else 0
+        burst_density = int(np.max(bins)) if len(bins) > 0 else 0
         
         is_tcp = sum(1 for p in pkts if p['proto'] == '6')
         is_udp = sum(1 for p in pkts if p['proto'] == '17')
-        ratio = is_tcp / (is_udp + 1)
+        ratio = float(is_tcp / (is_udp + 1))
         
-        return {
-            'pkt_count': pkt_count,
-            'byte_count': byte_count,
+        features = {
+            'pkt_count': int(pkt_count),
+            'byte_count': int(byte_count),
             'bytes_per_sec': bytes_per_sec,
+            'rolling_bps_mean': rolling_bps_mean,
+            'rolling_bps_std': rolling_bps_std,
             'size_mean': size_mean,
             'size_std': size_std,
             'iat_mean': iat_mean,
             'iat_std': iat_std,
+            'iat_cv': iat_cv,
+            'payload_ratio': payload_ratio,
             'burst_density': burst_density,
-            'dns_count': dns_count,
-            'tls_count': tls_count,
-            'quic_count': quic_count,
+            'dns_count': int(dns_count),
+            'tls_count': int(tls_count),
+            'quic_count': int(quic_count),
             'tcp_udp_ratio': ratio
         }
+        
+        # Keep history lean
+        self.feature_history.append(features)
+        if len(self.feature_history) > 10:
+            self.feature_history.pop(0)
+            
+        return features
 
     def _predict(self, features_dict):
         if not self.model:
@@ -174,14 +197,20 @@ class LiveInferenceEngine:
         
         # SHAP Explanations
         shap_values = self.explainer.shap_values(X)
-        # Handle multi-class SHAP (list of arrays)
+        
+        # SHAP returns [samples, features, classes] or a list of [samples, features]
+        # For our single sample:
         if isinstance(shap_values, list):
+            # List format (common for some RF versions)
             class_shap = shap_values[label_idx][0]
+        elif len(shap_values.shape) == 3:
+            # [samples, features, classes]
+            class_shap = shap_values[0, :, label_idx]
         else:
-            class_shap = shap_values[0] # Single class case
+            class_shap = shap_values[0]
             
         explanations = {
-            name: float(val) for name, val in zip(self.feature_names, class_shap)
+            name: float(np.asarray(val).item()) for name, val in zip(self.feature_names, class_shap)
         }
         
         return {
