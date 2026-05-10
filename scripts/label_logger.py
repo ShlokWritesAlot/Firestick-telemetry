@@ -1,6 +1,7 @@
 import csv
 import os
 import uuid
+import json
 from datetime import datetime
 import sys
 
@@ -74,12 +75,27 @@ class LabelLogger:
         except Exception as e:
             logger.error(f"Failed to log label: {str(e)}")
 
+    def save_metadata(self, metadata: dict):
+        """
+        Saves session metadata to a JSON file.
+        """
+        meta_filename = f"session_{self.session_id}_metadata.json"
+        meta_path = os.path.join(LABEL_DIR, meta_filename)
+        
+        # Add basic session info
+        metadata.update({
+            "session_id": self.session_id,
+            "filename": self.filename,
+            "created_at": get_timestamp()
+        })
+        
+        try:
+            with open(meta_path, 'w') as f:
+                json.dump(metadata, f, indent=4)
+            logger.info(f"Metadata saved to: {meta_path}")
+        except Exception as e:
+            logger.error(f"Failed to save metadata: {str(e)}")
+
     def validate_label(self, label: str):
         """Helper to check if a label is valid."""
         return label in VALID_LABELS
-
-if __name__ == "__main__":
-    # Test labeling system
-    l_logger = LabelLogger()
-    l_logger.log_event("test_event", "Netflix", "streaming", "Initial test log")
-    l_logger.log_event("home_press", "Launcher", "idle", "Pressed home button")

@@ -37,6 +37,9 @@ class FireStickController:
             if result.returncode != 0:
                 logger.error(f"Command failed: {result.stderr.strip()}")
             return result
+        except FileNotFoundError:
+            logger.error(f"ADB binary not found at '{self.adb_cmd}'. Please install ADB or update ADB_PATH in scripts/config.py.")
+            return None
         except subprocess.TimeoutExpired:
             logger.error(f"Command timed out: {' '.join(full_cmd)}")
             return None
@@ -139,15 +142,11 @@ if __name__ == "__main__":
     # Initialize labeling system
     l_logger = LabelLogger()
     
-    # Initialize controller with labeling support
-    controller = FireStickController(label_logger=l_logger)
-    
+if __name__ == "__main__":
+    # Simple connection test
+    controller = FireStickController()
     if controller.connect():
-        print("\n--- EdgePulse FireStick Telemetry Node (w/ Labeling) ---")
-        print(f"Connected to: {controller.ip}")
-        print(f"Session ID: {l_logger.session_id}")
-        
-        # Example: controller.home()
-        # This will automatically log the event to labels/session_<id>_labels.csv
+        print(f"Connection test successful: {controller.ip}")
+        print(f"Current Activity: {controller.get_foreground_activity()}")
     else:
-        print("Could not connect. Please check IP and ensure ADB is enabled on FireStick.")
+        print("Connection test failed.")

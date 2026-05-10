@@ -8,6 +8,10 @@ load_dotenv()
 FIRESTICK_IP = os.getenv("FIRESTICK_IP", "192.168.1.100")
 ADB_PATH = os.getenv("ADB_PATH", "adb")  # Assumes adb is in PATH
 
+# TShark Configuration
+TSHARK_PATH = os.getenv("TSHARK_PATH", "tshark")
+NETWORK_INTERFACE = os.getenv("NETWORK_INTERFACE", "1")  # Default to first interface
+
 # Directory Paths
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 LOG_DIR = os.path.join(BASE_DIR, "logs")

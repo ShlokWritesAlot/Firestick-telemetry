@@ -27,7 +27,12 @@ EdgePulse FireStick Telemetry Node is a specialized framework designed for remot
    Update `scripts/config.py` or create a `.env` file with your FireStick's IP address.
 
 ## Usage
-Run the main controller script to start capturing workload labels:
+To start an interactive labeling session:
+```bash
+python scripts/run_session.py
+```
+
+To test the ADB connection:
 ```bash
 python scripts/adb_controller.py
 ```
