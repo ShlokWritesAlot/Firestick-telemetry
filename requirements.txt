@@ -1,0 +1,9 @@
+# Core
+python-dotenv==1.0.1
+
+# Analysis (Pre-installed in most environments, but good to have)
+pandas
+numpy
+
+# Optional: if we want to use a more advanced ADB wrapper later
+# pure-python-adb
